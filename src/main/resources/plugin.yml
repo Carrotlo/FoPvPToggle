@@ -1,0 +1,30 @@
+name: FoPvPToggle
+description: Player PvP toggle with fast damage protection
+version: '${version}'
+
+main: me.foesio.foPvPToggle.FoPvPToggle
+api-version: '1.21'
+loadbefore: [ DeluxeCombat ]
+softdepend: [ WorldGuard ]
+
+authors: [ Carrotio ]
+
+commands:
+  fopvptoggle:
+    description: Toggle your PvP state
+    usage: /fopvptoggle
+    aliases: [ pvp, pvptoggle ]
+    permission: fopvptoggle.pvptoggle
+  fopvptoggleadmin:
+    description: FoPvPToggle admin command
+    usage: /fopvptoggleadmin <version|reload|editor>
+    aliases: [ pvptoggleadmin ]
+    permission: fopvptoggle.admin
+
+permissions:
+  fopvptoggle.pvptoggle:
+    description: Toggle personal PvP state
+    default: op
+  fopvptoggle.admin:
+    description: Access FoPvPToggle admin tools
+    default: op

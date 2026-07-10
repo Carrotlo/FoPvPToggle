@@ -1,0 +1,27 @@
+# New players use this PvP state until they toggle once.
+default-pvp-enabled: true
+
+# When enabled, PvP is forced on for everyone and players cannot disable /pvp.
+pvp-override:
+  enabled: false
+
+# In these worlds the toggle is disabled and PvP is always treated as enabled.
+disabled-worlds:
+  names: []
+
+# When enabled, players with PvP disabled cannot damage mobs and mobs cannot damage or target them.
+pve-protection:
+  enabled: false
+  clear-target-range: 48.0
+
+# When enabled, FoBoss will not target or damage players with PvP disabled.
+foboss-protection:
+  enabled: true
+
+# Players inside any listed WorldGuard region are forced to PvP enabled and cannot disable /pvp there.
+worldguard:
+  forced-pvp-regions:
+    names: []
+
+# File logging works like debug mode and saves plugin activity to logs/latest.log. Default: false
+file-logging: false
