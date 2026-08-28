@@ -8,6 +8,9 @@ import me.foesio.core.message.FoMessageMigrations;
 import me.foesio.core.message.FoMessageService;
 import me.foesio.core.reload.FoReloadRegistry;
 import me.foesio.core.reload.FoReloadResult;
+import me.foesio.core.sound.FoAdminSounds;
+import me.foesio.core.sound.FoEditorSounds;
+import me.foesio.core.sound.FoSoundService;
 import me.foesio.core.update.UpdateNoticeService;
 import me.foesio.foPvPToggle.command.AdminCommand;
 import me.foesio.foPvPToggle.command.ToggleCommand;
@@ -37,6 +40,9 @@ public final class FoPvPToggle extends JavaPlugin {
     private PvpToggleService toggleService;
     private EditorConfig editorConfig;
     private RegionLookupService regionLookupService;
+    private FoSoundService sounds;
+    private FoAdminSounds adminSounds;
+    private FoEditorSounds editorSounds;
 
     @Override
     public void onEnable() {
@@ -52,6 +58,9 @@ public final class FoPvPToggle extends JavaPlugin {
         core.metrics(BSTATS_PLUGIN_ID);
         editorConfig = new EditorConfig(this, fileLogService);
         editorConfig.reload();
+        sounds = core.createSounds();
+        adminSounds = FoAdminSounds.create(sounds);
+        editorSounds = FoEditorSounds.create(sounds);
 
         try {
             userDataStore = new UserDataStore(this, fileLogService);
@@ -65,15 +74,15 @@ public final class FoPvPToggle extends JavaPlugin {
         regionLookupService = RegionLookupServiceFactory.create(this);
         toggleService = new PvpToggleService(this, core, userDataStore, fileLogService, regionLookupService);
         toggleService.reloadSettings();
-        UpdateNoticeService updateService = core.createUpdateNotices(messages, MODRINTH_PROJECT_ID).start();
+        UpdateNoticeService updateService = core.createUpdateNotices(messages, MODRINTH_PROJECT_ID, adminSounds).start();
 
         EditorGui editorGui = new EditorGui(editorConfig, messages);
         RegionBrowserGui regionBrowserGui = new RegionBrowserGui();
         WorldBrowserGui worldBrowserGui = new WorldBrowserGui();
 
         getServer().getPluginManager().registerEvents(new CombatListener(toggleService, messages), this);
-        getServer().getPluginManager().registerEvents(new RegionRestrictionListener(toggleService, messages), this);
-        getServer().getPluginManager().registerEvents(new EditorListener(this, editorGui, regionBrowserGui, worldBrowserGui, messages), this);
+        getServer().getPluginManager().registerEvents(new RegionRestrictionListener(toggleService, messages, sounds), this);
+        getServer().getPluginManager().registerEvents(new EditorListener(this, editorGui, regionBrowserGui, worldBrowserGui, messages, editorSounds), this);
 
         registerCommands(updateService, editorGui);
         prefixedInfo("Enabled.");
@@ -109,6 +118,7 @@ public final class FoPvPToggle extends JavaPlugin {
                     refreshCore();
                 })
                 .add("messages", messages::reload)
+                .add("sounds", sounds::reload)
                 .add("editor", editorConfig::reload)
                 .add("pvp-settings", () -> {
                     toggleService.reloadSettings();
@@ -153,6 +163,18 @@ public final class FoPvPToggle extends JavaPlugin {
         return core;
     }
 
+    public FoSoundService sounds() {
+        return sounds;
+    }
+
+    public FoAdminSounds adminSounds() {
+        return adminSounds;
+    }
+
+    public FoEditorSounds editorSounds() {
+        return editorSounds;
+    }
+
     public PvpToggleService toggleService() {
         return toggleService;
     }
@@ -166,7 +188,7 @@ public final class FoPvPToggle extends JavaPlugin {
         if (toggleCommand == null) {
             prefixedSevere("Command 'fopvptoggle' is missing in plugin.yml.");
         } else {
-            ToggleCommand command = new ToggleCommand(toggleService, messages);
+            ToggleCommand command = new ToggleCommand(toggleService, messages, sounds, adminSounds);
             toggleCommand.setExecutor(command);
             toggleCommand.setTabCompleter(command);
         }
@@ -200,6 +222,7 @@ public final class FoPvPToggle extends JavaPlugin {
         core = FoPluginCore.create(this);
         core.warnIfNativeDialogsUnavailable();
         core.metrics(BSTATS_PLUGIN_ID);
+        sounds.reload();
     }
 
     private FoMessageMigrations messageMigrations() {

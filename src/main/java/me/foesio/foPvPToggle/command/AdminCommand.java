@@ -34,10 +34,12 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("fopvptoggle.admin")) {
             messages.send(sender, "no-permission", "{prefix}{bad}You do not have permission.");
+            plugin.adminSounds().updateError(sender);
             return true;
         }
         if (args.length != 1) {
             messages.send(sender, "usage-admin", "{prefix}{muted}Usage: {white}/{label} <version|reload|editor>", Map.of("{label}", label));
+            plugin.adminSounds().updateError(sender);
             return true;
         }
 
@@ -47,6 +49,7 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
             case "editor" -> handleEditor(sender);
             default -> {
                 messages.send(sender, "usage-admin", "{prefix}{muted}Usage: {white}/{label} <version|reload|editor>", Map.of("{label}", label));
+                plugin.adminSounds().updateError(sender);
                 yield true;
             }
         };
@@ -70,11 +73,17 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
     private boolean handleReload(CommandSender sender) {
         FoReloadResult result = plugin.reloadRuntimeSettings();
         if (!result.successful()) {
+            if (sender instanceof Player player) {
+                plugin.adminSounds().reloadError(player);
+            }
             messages.send(sender, "reload-failed", "{prefix}{bad}Reload failed at {white}{step}{bad}: {muted}{error}", Map.of(
                     "{step}", result.failedStep(),
                     "{error}", result.errorMessage()
             ));
             return true;
+        }
+        if (sender instanceof Player player) {
+            plugin.adminSounds().reload(player);
         }
         messages.send(sender, "reload-success", "{prefix}{good}Config, messages, and editor settings reloaded.");
         return true;

@@ -2,6 +2,7 @@ package me.foesio.foPvPToggle.listener;
 
 import me.foesio.foPvPToggle.PvpToggleService;
 import me.foesio.core.message.FoMessageService;
+import me.foesio.core.sound.FoSoundService;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -21,11 +22,13 @@ public final class RegionRestrictionListener implements Listener {
 
     private final PvpToggleService toggleService;
     private final FoMessageService messages;
+    private final FoSoundService sounds;
     private final Map<UUID, Long> messageCooldowns = new ConcurrentHashMap<>();
 
-    public RegionRestrictionListener(PvpToggleService toggleService, FoMessageService messages) {
+    public RegionRestrictionListener(PvpToggleService toggleService, FoMessageService messages, FoSoundService sounds) {
         this.toggleService = toggleService;
         this.messages = messages;
+        this.sounds = sounds;
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -74,6 +77,7 @@ public final class RegionRestrictionListener implements Listener {
         }
         messageCooldowns.put(player.getUniqueId(), now);
         messages.send(player, "region-pvp-forced-enabled", "{prefix}{good}PvP was forced on for you in this region.");
+        sounds.play(player, "pvp.forced");
     }
 
     private boolean changedBlock(Location from, Location to) {

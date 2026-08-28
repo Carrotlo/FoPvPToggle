@@ -2,6 +2,7 @@ package me.foesio.foPvPToggle.gui;
 
 import me.foesio.core.dialog.DialogButton;
 import me.foesio.core.dialog.TextDialogRequest;
+import me.foesio.core.editor.EditorDialogInputs;
 import me.foesio.core.selector.TriStateSelectionClick;
 import me.foesio.core.selector.TriStateSelectionHolder;
 import me.foesio.core.selector.TriStateSelectionMenus;
@@ -11,6 +12,7 @@ import me.foesio.core.selector.TriStateSelections;
 import me.foesio.foPvPToggle.FoPvPToggle;
 import me.foesio.foPvPToggle.PvpToggleService;
 import me.foesio.core.message.FoMessageService;
+import me.foesio.core.sound.FoEditorSounds;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -31,13 +33,15 @@ public final class EditorListener implements Listener {
     private final RegionBrowserGui regionBrowserGui;
     private final WorldBrowserGui worldBrowserGui;
     private final FoMessageService messages;
+    private final FoEditorSounds sounds;
 
-    public EditorListener(FoPvPToggle plugin, EditorGui editorGui, RegionBrowserGui regionBrowserGui, WorldBrowserGui worldBrowserGui, FoMessageService messages) {
+    public EditorListener(FoPvPToggle plugin, EditorGui editorGui, RegionBrowserGui regionBrowserGui, WorldBrowserGui worldBrowserGui, FoMessageService messages, FoEditorSounds sounds) {
         this.plugin = plugin;
         this.editorGui = editorGui;
         this.regionBrowserGui = regionBrowserGui;
         this.worldBrowserGui = worldBrowserGui;
         this.messages = messages;
+        this.sounds = sounds;
     }
 
     @EventHandler
@@ -53,6 +57,7 @@ public final class EditorListener implements Listener {
         }
         if (!player.hasPermission("fopvptoggle.admin")) {
             messages.send(player, "no-permission", "{prefix}{bad}You do not have permission.");
+            sounds.error(player);
             player.closeInventory();
             return;
         }
@@ -96,12 +101,14 @@ public final class EditorListener implements Listener {
                 messages.send(player, "region-worldguard-missing", "{prefix}{bad}WorldGuard is not installed or not enabled.");
             }
             regionBrowserGui.open(player, plugin, 0, "");
+            sounds.open(player);
             messages.send(player, "regions-opened", "{prefix}{good}Region browser opened.");
             return;
         }
 
         if (editorGui.isDisabledWorldsSlot(rawSlot)) {
             worldBrowserGui.open(player, plugin, 0, "");
+            sounds.open(player);
             messages.send(player, "worlds-opened", "{prefix}{good}World selector opened.");
             return;
         }
@@ -123,15 +130,17 @@ public final class EditorListener implements Listener {
 
         TriStateSelectionClick click = TriStateSelectionMenus.handleClick(rawSlot, holder);
         switch (click.action()) {
-            case BACK -> editorGui.open(player, plugin);
-            case PREVIOUS_PAGE, NEXT_PAGE -> TriStateSelectionMenus.open(player, click.nextRequest());
-            case SEARCH -> openSearch(player, holder.request(), "world", "world", query -> {
+            case BACK -> { sounds.back(player); editorGui.openSilently(player, plugin); }
+            case PREVIOUS_PAGE -> { sounds.previousPage(player); TriStateSelectionMenus.open(player, click.nextRequest()); }
+            case NEXT_PAGE -> { sounds.nextPage(player); TriStateSelectionMenus.open(player, click.nextRequest()); }
+            case SEARCH -> { sounds.search(player); openSearch(player, holder.request(), "world", "world", query -> {
                 worldBrowserGui.open(player, plugin, 0, query);
                 messages.send(player, "world-search-applied", "{prefix}{good}World search applied: {white}{query}", Map.of(
                         "{query}", query
                 ));
-            }, () -> worldBrowserGui.open(player, plugin, holder.request().page(), holder.request().filter()));
+            }, () -> worldBrowserGui.open(player, plugin, holder.request().page(), holder.request().filter())); }
             case CLEAR_SEARCH -> {
+                sounds.clearSearch(player);
                 TriStateSelectionMenus.open(player, click.nextRequest());
                 messages.send(player, "world-search-cleared", "{prefix}{good}World search cleared.");
             }
@@ -149,15 +158,17 @@ public final class EditorListener implements Listener {
 
         TriStateSelectionClick click = TriStateSelectionMenus.handleClick(rawSlot, holder);
         switch (click.action()) {
-            case BACK -> editorGui.open(player, plugin);
-            case PREVIOUS_PAGE, NEXT_PAGE -> TriStateSelectionMenus.open(player, click.nextRequest());
-            case SEARCH -> openSearch(player, holder.request(), "region", "spawn", query -> {
+            case BACK -> { sounds.back(player); editorGui.openSilently(player, plugin); }
+            case PREVIOUS_PAGE -> { sounds.previousPage(player); TriStateSelectionMenus.open(player, click.nextRequest()); }
+            case NEXT_PAGE -> { sounds.nextPage(player); TriStateSelectionMenus.open(player, click.nextRequest()); }
+            case SEARCH -> { sounds.search(player); openSearch(player, holder.request(), "region", "spawn", query -> {
                 regionBrowserGui.open(player, plugin, 0, query);
                 messages.send(player, "region-search-applied", "{prefix}{good}Region search applied: {white}{query}", Map.of(
                         "{query}", query
                 ));
-            }, () -> regionBrowserGui.open(player, plugin, holder.request().page(), holder.request().filter()));
+            }, () -> regionBrowserGui.open(player, plugin, holder.request().page(), holder.request().filter())); }
             case CLEAR_SEARCH -> {
+                sounds.clearSearch(player);
                 TriStateSelectionMenus.open(player, click.nextRequest());
                 messages.send(player, "region-search-cleared", "{prefix}{good}Region search cleared.");
             }
@@ -172,11 +183,12 @@ public final class EditorListener implements Listener {
         plugin.getConfig().set(path, enabled);
         plugin.saveConfig();
         plugin.reloadRuntimeSettings();
+        sounds.toggle(player, enabled);
         messages.send(player, "setting-saved", "{prefix}{good}Saved {white}{setting}{good}: {white}{value}", Map.of(
                 "{setting}", path,
                 "{value}", enabled ? "enabled" : "disabled"
         ));
-        editorGui.open(player, plugin);
+        editorGui.openSilently(player, plugin);
     }
 
     private void saveDisabledWorldSelection(Player player, TriStateSelectionClick click) {
@@ -184,6 +196,7 @@ public final class EditorListener implements Listener {
         plugin.getConfig().set(PvpToggleService.DISABLED_WORLDS_PATH, saved);
         plugin.saveConfig();
         plugin.reloadRuntimeSettings();
+        sounds.cycle(player);
 
         String normalized = normalize(click.key());
         boolean added = click.newState() == TriStateSelectionState.DISABLED;
@@ -199,6 +212,7 @@ public final class EditorListener implements Listener {
         plugin.getConfig().set("worldguard.disabled-regions", null);
         plugin.saveConfig();
         plugin.reloadRuntimeSettings();
+        sounds.cycle(player);
 
         String normalized = normalize(click.key());
         boolean added = click.newState() == TriStateSelectionState.ENABLED;
@@ -229,10 +243,22 @@ public final class EditorListener implements Listener {
                 true,
                 false
         );
-        plugin.core().textInputService().openTextInput(player, request, onSearch, () -> {
-            messages.send(player, "prompt-cancelled", "{prefix}{bad}Input cancelled.");
-            onCancel.run();
-        });
+        boolean openedNative = EditorDialogInputs.openTextFromInventory(
+                plugin,
+                plugin.core().inventoryCloseSuppressor(),
+                plugin.core().dialogService(),
+                player,
+                request,
+                onSearch,
+                () -> {
+                    messages.send(player, "prompt-cancelled", "{prefix}{bad}Input cancelled.");
+                    sounds.back(player);
+                    onCancel.run();
+                }
+        );
+        if (openedNative) {
+            sounds.open(player);
+        }
     }
 
     private List<String> normalizedSorted(List<String> rawValues) {

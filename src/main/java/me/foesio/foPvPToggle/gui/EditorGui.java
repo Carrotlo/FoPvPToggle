@@ -26,6 +26,14 @@ public final class EditorGui {
     }
 
     public void open(Player player, FoPvPToggle plugin) {
+        open(player, plugin, true);
+    }
+
+    public void openSilently(Player player, FoPvPToggle plugin) {
+        open(player, plugin, false);
+    }
+
+    private void open(Player player, FoPvPToggle plugin, boolean playOpenSound) {
         EditorHolder holder = new EditorHolder();
         Inventory inventory = Bukkit.createInventory(holder, config.size(), messages.renderTemplate(config.title(), Map.of()));
         holder.setInventory(inventory);
@@ -62,6 +70,9 @@ public final class EditorGui {
         ));
 
         player.openInventory(inventory);
+        if (playOpenSound) {
+            plugin.editorSounds().open(player);
+        }
     }
 
     private void fill(Inventory inventory) {

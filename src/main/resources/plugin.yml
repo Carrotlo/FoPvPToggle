@@ -14,12 +14,10 @@ commands:
     description: Toggle your PvP state
     usage: /fopvptoggle
     aliases: [ pvp, pvptoggle ]
-    permission: fopvptoggle.pvptoggle
   fopvptoggleadmin:
     description: FoPvPToggle admin command
     usage: /fopvptoggleadmin <version|reload|editor>
     aliases: [ pvptoggleadmin ]
-    permission: fopvptoggle.admin
 
 permissions:
   fopvptoggle.pvptoggle:
