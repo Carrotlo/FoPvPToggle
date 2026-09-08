@@ -54,6 +54,7 @@ public final class FoPvPToggle extends JavaPlugin {
         fileLogService.configureFromConfig("file-logging", true);
         messages = FoMessageService.load(this, messageMigrations());
         core = FoPluginCore.create(this);
+        migrateSprites();
         core.warnIfNativeDialogsUnavailable();
         core.metrics(BSTATS_PLUGIN_ID);
         editorConfig = new EditorConfig(this, fileLogService);
@@ -223,6 +224,24 @@ public final class FoPvPToggle extends JavaPlugin {
         core.warnIfNativeDialogsUnavailable();
         core.metrics(BSTATS_PLUGIN_ID);
         sounds.reload();
+    }
+
+    private void migrateSprites() {
+        messages.migrateToVersion(core.migrations(), 1, config -> {
+            boolean changed = false;
+            changed |= FoMessageService.addMissingToken(config, "tokens.prefix", ":iron_sword:", null);
+            changed |= FoMessageService.addMissingToken(config, "reload-success", ":emerald:");
+            changed |= FoMessageService.addMissingToken(config, "reload-failed", ":redstone:");
+            changed |= FoMessageService.addMissingToken(config, "editor-opened", ":book:");
+            changed |= FoMessageService.addMissingToken(config, "setting-saved", ":emerald:");
+            changed |= FoMessageService.addMissingToken(config, "worlds-opened", ":grass_block:");
+            changed |= FoMessageService.addMissingToken(config, "world-added", ":grass_block:");
+            changed |= FoMessageService.addMissingToken(config, "world-removed", ":barrier:");
+            changed |= FoMessageService.addMissingToken(config, "regions-opened", ":map:");
+            changed |= FoMessageService.addMissingToken(config, "region-added", ":emerald:");
+            changed |= FoMessageService.addMissingToken(config, "region-removed", ":barrier:");
+            return changed;
+        });
     }
 
     private FoMessageMigrations messageMigrations() {

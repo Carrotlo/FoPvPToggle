@@ -1,6 +1,7 @@
 package me.foesio.foPvPToggle.gui;
 
 import me.foesio.core.editor.EditorItemFactory;
+import me.foesio.core.message.FoStyle;
 import me.foesio.core.selector.WorldSelectionEntries;
 import me.foesio.foPvPToggle.FoPvPToggle;
 import me.foesio.core.message.FoMessageService;
@@ -41,29 +42,40 @@ public final class EditorGui {
         fill(inventory);
 
         setItem(inventory, config.defaultPvp().slot(), buildToggleItem(
+                player,
                 config.defaultPvp(),
-                plugin.getConfig().getBoolean("default-pvp-enabled", true)
+                plugin.getConfig().getBoolean("default-pvp-enabled", true),
+                "toggle default PvP"
         ));
         setItem(inventory, config.pvpOverride().slot(), buildToggleItem(
+                player,
                 config.pvpOverride(),
-                plugin.getConfig().getBoolean("pvp-override.enabled", false)
+                plugin.getConfig().getBoolean("pvp-override.enabled", false),
+                "toggle the PvP override"
         ));
         setItem(inventory, config.pveProtection().slot(), buildToggleItem(
+                player,
                 config.pveProtection(),
-                plugin.getConfig().getBoolean("pve-protection.enabled", false)
+                plugin.getConfig().getBoolean("pve-protection.enabled", false),
+                "toggle PvE protection"
         ));
         setItem(inventory, config.foBossProtection().slot(), buildToggleItem(
+                player,
                 config.foBossProtection(),
-                plugin.getConfig().getBoolean("foboss-protection.enabled", true)
+                plugin.getConfig().getBoolean("foboss-protection.enabled", true),
+                "toggle FoBoss protection"
         ));
-        setItem(inventory, config.disabledRegions().slot(), buildItem(
+        setItem(inventory, config.disabledRegions().slot(), buildButton(
+                player,
                 config.disabledRegions(),
-                String.valueOf(plugin.toggleService().forcedPvpRegionNames().size())
+                String.valueOf(plugin.toggleService().forcedPvpRegionNames().size()),
+                "configure forced PvP regions"
         ));
         Set<String> disabledWorlds = plugin.toggleService().disabledWorldNames();
         int disabledWorldCount = disabledWorlds.size();
         int enabledWorldCount = Math.max(0, WorldSelectionEntries.loadedAndConfigured(plugin, disabledWorlds).size() - disabledWorldCount);
         setItem(inventory, config.disabledWorlds().slot(), EditorItemFactory.worlds(
+                player,
                 enabledWorldCount,
                 disabledWorldCount,
                 "enabled"
@@ -85,7 +97,7 @@ public final class EditorGui {
             return;
         }
 
-        ItemStack filler = buildItem(config.filler(), "");
+        ItemStack filler = buildPlainItem(null, config.filler(), "");
         for (int slot : fillerSlots) {
             if (slot >= 0 && slot < inventory.getSize()) {
                 inventory.setItem(slot, filler.clone());
@@ -121,17 +133,41 @@ public final class EditorGui {
         return slot == config.disabledWorlds().slot();
     }
 
-    private ItemStack buildItem(EditorConfig.GuiItem guiItem, String state) {
-        return EditorItemFactory.item(guiItem.material(), name(guiItem, state), lore(guiItem, state));
+    private ItemStack buildPlainItem(Player player, EditorConfig.GuiItem guiItem, String state) {
+        return player == null
+                ? EditorItemFactory.item(guiItem.material(), name(guiItem, state), lore(guiItem, state))
+                : EditorItemFactory.item(player, guiItem.material(), name(player, guiItem, state), lore(player, guiItem, state));
     }
 
-    private ItemStack buildToggleItem(EditorConfig.GuiItem guiItem, boolean enabled) {
+    private ItemStack buildButton(Player player, EditorConfig.GuiItem guiItem, String state, String action) {
+        return EditorItemFactory.button(
+                player,
+                guiItem.material(),
+                FoStyle.THEME,
+                name(player, guiItem, state),
+                buttonInformation(player, guiItem, state, null),
+                action
+        );
+    }
+
+    private ItemStack buildToggleItem(Player player, EditorConfig.GuiItem guiItem, boolean enabled, String action) {
         Material material = guiItem.materialConfigured() ? guiItem.material() : enabled ? Material.LIME_DYE : Material.RED_DYE;
-        return EditorItemFactory.item(material, name(guiItem, state(enabled)), lore(guiItem, state(enabled)));
+        return EditorItemFactory.button(
+                player,
+                material,
+                enabled ? FoStyle.GOOD : FoStyle.BAD,
+                name(player, guiItem, state(enabled)),
+                buttonInformation(player, guiItem, state(enabled), enabled),
+                action
+        );
     }
 
     private String name(EditorConfig.GuiItem guiItem, String state) {
         return messages.renderTemplate(guiItem.name().replace("{state}", state), Map.of());
+    }
+
+    private String name(Player player, EditorConfig.GuiItem guiItem, String state) {
+        return messages.renderTemplateForViewer(player, guiItem.name().replace("{state}", state), Map.of());
     }
 
     private List<String> lore(EditorConfig.GuiItem guiItem, String state) {
@@ -142,6 +178,35 @@ public final class EditorGui {
                     .replace("{count}", state), Map.of()));
         }
         return lore;
+    }
+
+    private List<String> lore(Player player, EditorConfig.GuiItem guiItem, String state) {
+        List<String> lore = new ArrayList<>();
+        for (String line : guiItem.lore()) {
+            lore.add(messages.renderTemplateForViewer(player, line
+                    .replace("{state}", state)
+                    .replace("{count}", state), Map.of()));
+        }
+        return lore;
+    }
+
+    private List<String> buttonInformation(Player player, EditorConfig.GuiItem guiItem, String state, Boolean enabled) {
+        List<String> information = new ArrayList<>();
+        if (enabled != null) {
+            information.add("State: " + (enabled ? FoStyle.GOOD + "ON" : FoStyle.BAD + "OFF"));
+        }
+        for (String line : player == null ? lore(guiItem, state) : lore(player, guiItem, state)) {
+            String plain = org.bukkit.ChatColor.stripColor(line);
+            if (plain == null) {
+                plain = line;
+            }
+            String normalized = plain.trim().toLowerCase(java.util.Locale.ROOT);
+            if (normalized.startsWith("current:") || normalized.startsWith("click to")) {
+                continue;
+            }
+            information.add(line);
+        }
+        return information;
     }
 
     private void setItem(Inventory inventory, int slot, ItemStack item) {

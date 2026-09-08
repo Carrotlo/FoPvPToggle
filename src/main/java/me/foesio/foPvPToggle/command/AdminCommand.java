@@ -64,9 +64,7 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
     }
 
     private boolean handleVersion(CommandSender sender) {
-        messages.send(sender, "version-author", "{prefix}{muted}Author: {white}Carrotio");
-        messages.send(sender, "version-running", "{prefix}{muted}Running version: {white}{version}", Map.of("{version}", plugin.getDescription().getVersion()));
-        updateService.sendVersion(sender);
+        updateService.checkAndSendVersion(sender);
         return true;
     }
 

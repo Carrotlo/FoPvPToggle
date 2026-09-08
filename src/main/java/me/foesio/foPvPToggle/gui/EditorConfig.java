@@ -42,21 +42,22 @@ public final class EditorConfig {
                 fileLogService.warn("Failed to load guis/editor.yml: " + exception.getMessage());
             }
         }
+        migrateDefaultSlots(yaml, file);
 
         title = yaml.getString("title", "&8" + GuiTitles.smallCaps("FoPvPToggle Editor"));
         rows = Math.max(1, Math.min(6, yaml.getInt("rows", 3)));
         filler = readItem(yaml, "filler", Material.GRAY_STAINED_GLASS_PANE, -1, " ", List.of());
-        defaultPvp = readItem(yaml, "default-pvp", Material.LIME_DYE, 11, "{theme}Default PvP",
+        defaultPvp = readItem(yaml, "default-pvp", Material.LIME_DYE, 10, "{theme}Default PvP",
                 List.of("{white}Current: {state}", "{muted}New players start with this state.", "{muted}Click to toggle."));
-        pvpOverride = readItem(yaml, "pvp-override", Material.REDSTONE_TORCH, 12, "{bad}Admin PvP Override",
+        pvpOverride = readItem(yaml, "pvp-override", Material.REDSTONE_TORCH, 11, "{bad}Admin PvP Override",
                 List.of("{white}Current: {state}", "{muted}Forces PvP on for everyone.", "{muted}Blocks /pvp abuse during events.", "{muted}Click to toggle."));
-        foBossProtection = readItem(yaml, "foboss-protection", Material.SHIELD, 13, "{theme}FoBoss Protection",
+        foBossProtection = readItem(yaml, "foboss-protection", Material.SHIELD, 12, "{theme}FoBoss Protection",
                 List.of("{white}Current: {state}", "{muted}Stops FoBoss targeting and damaging", "{muted}players with /pvp disabled.", "{muted}Click to toggle."));
-        pveProtection = readItem(yaml, "pve-protection", Material.IRON_SWORD, 15, "{theme}PvE Protection",
+        pveProtection = readItem(yaml, "pve-protection", Material.IRON_SWORD, 14, "{theme}PvE Protection",
                 List.of("{white}Current: {state}", "{muted}Blocks mob damage both ways", "{muted}while /pvp is disabled.", "{muted}Click to toggle."));
-        disabledRegions = readItem(yaml, "forced-pvp-regions", Material.MAP, 14, "{theme}Forced PvP Regions",
+        disabledRegions = readItem(yaml, "forced-pvp-regions", Material.MAP, 13, "{theme}Forced PvP Regions",
                 List.of("{white}Configured: {count}", "{muted}WorldGuard regions that force PvP on.", "{muted}Click to manage."));
-        disabledWorlds = readItem(yaml, "disabled-worlds", Material.GRASS_BLOCK, 16, "{theme}World Rules",
+        disabledWorlds = readItem(yaml, "disabled-worlds", Material.GRASS_BLOCK, 15, "{theme}World Rules",
                 List.of("{white}Disabled worlds: {count}", "{muted}The plugin leaves PvP alone there.", "{muted}Click to manage worlds."));
     }
 
@@ -127,6 +128,39 @@ public final class EditorConfig {
         }
         Material material = Material.matchMaterial(raw.trim());
         return material != null && material != Material.AIR;
+    }
+
+    private void migrateDefaultSlots(YamlConfiguration yaml, File file) {
+        if (!file.exists()) {
+            return;
+        }
+
+        boolean changed = false;
+        changed |= migrateSlot(yaml, "default-pvp", 11, 10);
+        changed |= migrateSlot(yaml, "pvp-override", 12, 11);
+        changed |= migrateSlot(yaml, "foboss-protection", 13, 12);
+        changed |= migrateSlot(yaml, "forced-pvp-regions", 14, 13);
+        changed |= migrateSlot(yaml, "pve-protection", 15, 14);
+        changed |= migrateSlot(yaml, "disabled-worlds", 16, 15);
+        if (!changed) {
+            return;
+        }
+
+        try {
+            yaml.save(file);
+        } catch (IOException exception) {
+            plugin.getLogger().warning(plugin.plainPrefix() + " Failed to migrate default editor slots: " + exception.getMessage());
+            fileLogService.warn("Failed to migrate default editor slots: " + exception.getMessage());
+        }
+    }
+
+    private boolean migrateSlot(YamlConfiguration yaml, String key, int oldSlot, int newSlot) {
+        String path = "items." + key + ".slot";
+        if (!yaml.contains(path) || yaml.getInt(path) != oldSlot) {
+            return false;
+        }
+        yaml.set(path, newSlot);
+        return true;
     }
 
     public record GuiItem(Material material, boolean materialConfigured, int slot, String name, List<String> lore, List<Integer> slots) {
