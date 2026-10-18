@@ -279,7 +279,8 @@ public final class CombatListener implements Listener {
         if (material == Material.RESPAWN_ANCHOR) {
             return world == null || !world.isRespawnAnchorWorks();
         }
-        if (material.name().endsWith("_BED")) {
+        // Straw beds added in 26.3 break without the normal bed explosion.
+        if (material.name().endsWith("_BED") && !material.name().equals("STRAW_BED")) {
             return world == null || !world.isBedWorks();
         }
         return false;

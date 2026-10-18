@@ -75,6 +75,11 @@ public final class FoPvPToggle extends JavaPlugin {
         regionLookupService = RegionLookupServiceFactory.create(this);
         toggleService = new PvpToggleService(this, core, userDataStore, fileLogService, regionLookupService);
         toggleService.reloadSettings();
+        if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            core.placeholders("fopvptoggle")
+                    .offline("status", player -> isPvpEnabled(player.getUniqueId()) ? "enabled" : "disabled")
+                    .registerIfAvailable();
+        }
         UpdateNoticeService updateService = core.createUpdateNotices(messages, MODRINTH_PROJECT_ID, adminSounds).start();
 
         EditorGui editorGui = new EditorGui(editorConfig, messages);

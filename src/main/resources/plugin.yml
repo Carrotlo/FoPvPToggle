@@ -5,7 +5,7 @@ version: '${version}'
 main: me.foesio.foPvPToggle.FoPvPToggle
 api-version: '1.21'
 loadbefore: [ DeluxeCombat ]
-softdepend: [ WorldGuard ]
+softdepend: [ WorldGuard, PlaceholderAPI ]
 
 authors: [ Carrotio ]
 
