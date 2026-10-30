@@ -21,7 +21,7 @@ Personal PvP toggles with world, region, and damage controls.
 Download the latest compatible version from [Modrinth](https://modrinth.com/plugin/fopvptoggle). Check the [versions page](https://modrinth.com/plugin/fopvptoggle/versions) for supported Minecraft versions and server platforms.
 
 - **Required:** None
-- **Optional integrations:** `WorldGuard`
+- **Optional integrations:** `WorldGuard`, `PlaceholderAPI`
 
 ## Screenshots
 
@@ -59,7 +59,7 @@ For help or issue reports, join the [Carrotio Discord server](https://discord.gg
 <details>
 <summary><strong>PlaceholderAPI</strong></summary>
 
-This plugin does not register public PlaceholderAPI placeholders.
+When PlaceholderAPI is installed, `%fopvptoggle_status%` returns `enabled` or `disabled`.
 
 </details>
 
@@ -77,6 +77,7 @@ Main config areas: `default-pvp-enabled`, `pvp-override`, `disabled-worlds`, `pv
 <details>
 <summary><strong>Developer API</strong></summary>
 
-This plugin does not expose a public developer API.
+FoPvPToggle exposes a [public API source](src/main/java/me/foesio/foPvPToggle/api) for effective
+PvP and PvE queries, preference changes, and temporary PvP forces.
 
 </details>

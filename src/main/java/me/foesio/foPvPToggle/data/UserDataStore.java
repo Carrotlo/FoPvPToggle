@@ -65,6 +65,10 @@ public final class UserDataStore {
     }
 
     public synchronized void saveState(UUID playerId, boolean pvpEnabled) {
+        trySaveState(playerId, pvpEnabled);
+    }
+
+    public synchronized boolean trySaveState(UUID playerId, boolean pvpEnabled) {
         try (PreparedStatement statement = connection.prepareStatement("""
                 INSERT INTO player_pvp_state(uuid, pvp_enabled, updated_at)
                 VALUES(?, ?, ?)
@@ -76,9 +80,11 @@ public final class UserDataStore {
             statement.setInt(2, pvpEnabled ? 1 : 0);
             statement.setLong(3, System.currentTimeMillis());
             statement.executeUpdate();
+            return true;
         } catch (SQLException exception) {
             plugin.getLogger().warning(plugin.plainPrefix() + " Failed to save PvP state for " + playerId + ": " + exception.getMessage());
             fileLogService.error("Failed to save PvP state for " + playerId + ": " + exception.getMessage(), exception);
+            return false;
         }
     }
 

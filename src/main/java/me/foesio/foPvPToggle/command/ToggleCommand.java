@@ -1,6 +1,8 @@
 package me.foesio.foPvPToggle.command;
 
 import me.foesio.foPvPToggle.PvpToggleService;
+import me.foesio.foPvPToggle.api.PvpChangeCause;
+import me.foesio.foPvPToggle.api.PvpChangeResult;
 import me.foesio.core.message.FoMessageService;
 import me.foesio.core.sound.FoSoundService;
 import me.foesio.core.sound.FoAdminSounds;
@@ -67,7 +69,9 @@ public final class ToggleCommand implements CommandExecutor, TabCompleter {
                         messages.send(player, "region-pvp-forced-enabled", "{prefix}{good}PvP was forced on for you in this region.");
                         return true;
                     }
-                    toggleService.setPvpEnabled(player, true);
+                    if (!acceptChange(player, toggleService.requestPvpChange(player, true, PvpChangeCause.COMMAND))) {
+                        return true;
+                    }
                     sounds.play(player, "pvp.enabled");
                     messages.send(player, "pvp-enabled", "{prefix}{good}PvP enabled.");
                     return true;
@@ -83,7 +87,9 @@ public final class ToggleCommand implements CommandExecutor, TabCompleter {
                         messages.send(player, "region-toggle-denied", "{prefix}{bad}You cannot disable /pvp inside this WorldGuard region.");
                         return true;
                     }
-                    toggleService.setPvpEnabled(player, false);
+                    if (!acceptChange(player, toggleService.requestPvpChange(player, false, PvpChangeCause.COMMAND))) {
+                        return true;
+                    }
                     sounds.play(player, "pvp.disabled");
                     sendDisabled(player);
                     return true;
@@ -112,7 +118,10 @@ public final class ToggleCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        boolean enabled = toggleService.toggle(player);
+        boolean enabled = !toggleService.isPvpEnabled(player);
+        if (!acceptChange(player, toggleService.requestPvpChange(player, enabled, PvpChangeCause.COMMAND))) {
+            return true;
+        }
         if (enabled) {
             sounds.play(player, "pvp.enabled");
             messages.send(player, "pvp-enabled", "{prefix}{good}PvP enabled.");
@@ -145,6 +154,28 @@ public final class ToggleCommand implements CommandExecutor, TabCompleter {
         if (toggleService.isPveProtected(player)) {
             messages.send(player, "pve-protection-active", "{prefix}{muted}PvE protection is also active.");
         }
+    }
+
+    private boolean acceptChange(Player player, PvpChangeResult result) {
+        if (result == PvpChangeResult.CHANGED || result == PvpChangeResult.UNCHANGED) {
+            return true;
+        }
+        adminSounds.updateError(player);
+        switch (result) {
+            case DENIED_TEMPORARY_FORCE -> messages.send(player, "pvp-temporary-forced",
+                    "{prefix}{bad}PvP is temporarily required by another plugin.");
+            case CANCELLED -> messages.send(player, "pvp-change-cancelled",
+                    "{prefix}{bad}You cannot change PvP right now.");
+            case DENIED_REGION -> messages.send(player, "region-toggle-denied",
+                    "{prefix}{bad}You cannot disable /pvp inside this WorldGuard region.");
+            case DENIED_OVERRIDE -> messages.send(player, "pvp-override-denied",
+                    "{prefix}{bad}You cannot disable /pvp while admin event override is enabled.");
+            case DENIED_WORLD -> messages.send(player, "pvp-world-disabled",
+                    "{prefix}{bad}/pvp is disabled in this world. PvP is always enabled here.");
+            default -> messages.send(player, "pvp-change-unavailable",
+                    "{prefix}{bad}PvP cannot be changed right now.");
+        }
+        return false;
     }
 
     private void sendDisabled(Player player) {

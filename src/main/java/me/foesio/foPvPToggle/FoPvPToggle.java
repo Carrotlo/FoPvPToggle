@@ -13,6 +13,7 @@ import me.foesio.core.sound.FoEditorSounds;
 import me.foesio.core.sound.FoSoundService;
 import me.foesio.core.update.UpdateNoticeService;
 import me.foesio.foPvPToggle.command.AdminCommand;
+import me.foesio.foPvPToggle.api.PvpToggleApi;
 import me.foesio.foPvPToggle.command.ToggleCommand;
 import me.foesio.foPvPToggle.data.UserDataStore;
 import me.foesio.foPvPToggle.gui.EditorConfig;
@@ -26,6 +27,7 @@ import me.foesio.foPvPToggle.region.RegionLookupService;
 import me.foesio.foPvPToggle.region.RegionLookupServiceFactory;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.ServicePriority;
 
 import java.util.UUID;
 
@@ -75,6 +77,7 @@ public final class FoPvPToggle extends JavaPlugin {
         regionLookupService = RegionLookupServiceFactory.create(this);
         toggleService = new PvpToggleService(this, core, userDataStore, fileLogService, regionLookupService);
         toggleService.reloadSettings();
+        getServer().getServicesManager().register(PvpToggleApi.class, toggleService, this, ServicePriority.Normal);
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             core.placeholders("fopvptoggle")
                     .offline("status", player -> isPvpEnabled(player.getUniqueId()) ? "enabled" : "disabled")
@@ -87,6 +90,7 @@ public final class FoPvPToggle extends JavaPlugin {
         WorldBrowserGui worldBrowserGui = new WorldBrowserGui();
 
         getServer().getPluginManager().registerEvents(new CombatListener(toggleService, messages), this);
+        getServer().getPluginManager().registerEvents(toggleService, this);
         getServer().getPluginManager().registerEvents(new RegionRestrictionListener(toggleService, messages, sounds), this);
         getServer().getPluginManager().registerEvents(new EditorListener(this, editorGui, regionBrowserGui, worldBrowserGui, messages, editorSounds), this);
 
@@ -97,6 +101,10 @@ public final class FoPvPToggle extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (toggleService != null) {
+            getServer().getServicesManager().unregister(PvpToggleApi.class, toggleService);
+            toggleService.clearTemporaryForces();
+        }
         if (fileLogService != null) {
             fileLogService.info("Disabled.");
         }
